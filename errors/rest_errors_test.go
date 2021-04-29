@@ -55,3 +55,23 @@ func TestNewNotFoundError(t *testing.T) {
 		t.Errorf("\nExpected error: %s\nReceived error: %s", "Not found", err.Error)
 	}
 }
+
+func TestNewUnauthorizedError(t *testing.T) {
+	expectedMessage := "you have been unauthorized"
+	err := NewUnauthorizedError(expectedMessage)
+
+	if err == nil {
+		t.Error("Error should not be nil")
+	}
+
+	if err != nil && err.Status != 401 {
+		t.Error("Error should be 401")
+	}
+
+	if err != nil && err.Message != expectedMessage {
+		t.Errorf("\nExpected message: %s\nReceived message: %s", expectedMessage, err.Message)
+	}
+	if err != nil && err.Error != "Unauthorized" {
+		t.Errorf("\nExpected error: %s\nReceived error: %s", "Not found", err.Error)
+	}
+}
