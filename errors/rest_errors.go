@@ -4,40 +4,77 @@ import (
 	"net/http"
 )
 
-type RestErr struct {
-	Message string `json:"message"`
-	Status  int    `json:"status"`
-	Error   string `json:"error"`
+type RestErr interface {
+	Message() string
+	Status() int
+	Error() string
+	Causes() []interface{}
 }
 
-func NewBadRequestError(m string) *RestErr {
-	return &RestErr{
-		Message: m,
-		Status:  http.StatusBadRequest,
-		Error:   "Bad Request",
+type restErr struct {
+	M string        `json:"message"`
+	S int           `json:"status"`
+	E string        `json:"error"`
+	C []interface{} `json:"causes"`
+}
+
+func (r *restErr) Message() string {
+	return r.M
+}
+
+func (r *restErr) Status() int {
+	return r.S
+}
+
+func (r *restErr) Error() string {
+	return r.E
+}
+
+func (r *restErr) Causes() []interface{} {
+	return r.C
+}
+
+func NewRestError(message string, status int, error string, causes []interface{}) RestErr {
+	return &restErr{
+		M: message,
+		S: status,
+		E: error,
+		C: causes,
 	}
 }
 
-func NewNotFoundError(m string) *RestErr {
-	return &RestErr{
-		Message: m,
-		Status:  http.StatusNotFound,
-		Error:   "Not found",
+func NewBadRequestError(m string) RestErr {
+	return &restErr{
+		M: m,
+		S: http.StatusBadRequest,
+		E: "Bad Request",
 	}
 }
 
-func NewInternalServerError(m string) *RestErr {
-	return &RestErr{
-		Message: m,
-		Status:  http.StatusInternalServerError,
-		Error:   "Internal server error",
+func NewNotFoundError(m string) RestErr {
+	return &restErr{
+		M: m,
+		S: http.StatusNotFound,
+		E: "Not found",
 	}
 }
 
-func NewUnauthorizedError(m string) *RestErr {
-	return &RestErr{
-		Message: m,
-		Status:  401,
-		Error:   "Unauthorized",
+func NewInternalServerError(m string, err error) RestErr {
+	r := &restErr{
+		M: m,
+		S: http.StatusInternalServerError,
+		E: "Internal server error",
+	}
+	if err != nil {
+		r.C = append(r.C, err.Error())
+	}
+	return r
+}
+
+func NewUnauthorizedError(m string) RestErr {
+	return &restErr{
+		M: m,
+		S: 401,
+		E: "Unauthorized",
 	}
 }
