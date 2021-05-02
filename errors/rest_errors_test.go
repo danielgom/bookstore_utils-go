@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"testing"
@@ -26,6 +27,61 @@ func TestNewRestError(t *testing.T) {
 	if err != nil && err.Causes() != nil {
 		t.Errorf("Causes should be nil")
 	}
+
+}
+
+func TestNewRestErrorFromBytes(t *testing.T) {
+	t.Run("Shouldn't have error", func(t *testing.T) {
+		message := "This is test err"
+		e := "new error"
+		errTest := restErr{
+			M: message,
+			S: 401,
+			E: e,
+			C: nil,
+		}
+		errBytes, _ := json.Marshal(errTest)
+		rErr, err := NewRestErrorFromBytes(errBytes)
+
+		if err != nil {
+			t.Error("Error should be nil")
+		}
+
+		if rErr == nil {
+			t.Error("RestError should not be nil")
+		} else {
+			if rErr.Message() != message {
+				t.Errorf("\nExpected message: %s\nReceived message: %s", message, rErr.Message())
+			}
+			if rErr.Status() != 401 {
+				t.Errorf("\nExpected status: %d\nReceived status: %d", 401, rErr.Status())
+			}
+			if rErr.Causes() != nil {
+				t.Errorf("\nExpected causes: %v\nReceived causes: %v", nil, rErr.Causes())
+			}
+			if rErr.Error() != e {
+				t.Errorf("\nExpected error: %s\nReceived error: %s", e, rErr.Error())
+			}
+		}
+	})
+	t.Run("Should have error", func(t *testing.T) {
+		errTest := "{This is not a valid json}"
+		errBytes := []byte(errTest)
+
+		rErr, err := NewRestErrorFromBytes(errBytes)
+		invalidRes := "invalid json"
+
+		if rErr != nil {
+			t.Error("RestErr should be nil")
+		}
+		if err == nil {
+			t.Error("Error should not be nil")
+		} else {
+			if err.Error() != invalidRes {
+				t.Errorf("\nExpected error: %s\nReceived error: %s", invalidRes, err.Error())
+			}
+		}
+	})
 
 }
 
